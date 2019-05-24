@@ -28,6 +28,10 @@ BootManagedVM:
   - ethernet
   - disk
 
+HardenedVM:
+ name: cis-validation
+ timestamp: 123456123
+
 localEsxConfigStorageDirectory: /tmp
 
 

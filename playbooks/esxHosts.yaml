@@ -88,4 +88,38 @@
             boot_firmware: '{{ BootManagedVM.boot_firmware }}'
             secure_boot_enabled: '{{ BootManagedVM.secure_boot_enabled }}'
             boot_order: '{{bootOrder}}'
+        - debug: var=manageBootOrder
+
+
+        - name: Add hardened attribute to VM
+          delegate_to: '{{bastionHost}}'
+          register: h
+          vmware_guest_custom_attribute_defs:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            name: '{{ BootManagedVM.name }}'
+            state: present
+            attribute_key: hardened
+        - debug: var=h
+
+
+        - name: Set hardened attribute on VM
+          delegate_to: '{{bastionHost}}'
+          register: hh
+          vmware_guest_custom_attributes:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            name: '{{ HardenedVM.name }}'
+            state: present
+            attributes:
+                - name: hardened
+                  value: yes
+                - name: hardened_timestamp
+                  value: '{{HardenedVM.timestamp}}'
+        - debug: var=hh
+
 
