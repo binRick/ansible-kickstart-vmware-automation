@@ -1,5 +1,11 @@
 ---
 
+ISO:
+ path: kickstartIsos
+
+Kickstart:
+ path: kickstartHostConfigs
+
 OVF:
  name: test ovf1
  power_on: no

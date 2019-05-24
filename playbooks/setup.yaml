@@ -1,0 +1,75 @@
+---
+
+- hosts: vms
+  connection: local
+  become: no
+  vars_files: [../vars/main.yaml]
+  vars:
+    vsphere_hostname: "{{ vsphere_hostname }}"
+    vsphere_username: "{{ vsphere_username }}"
+    vsphere_password: "{{ vsphere_password }}"
+    vsphere_datacenter: "{{ vsphere_datacenter }}"
+    vsphere_datastore: "{{ vsphere_datastore }}"
+
+  tasks:
+  - name: Ansible Controller Builds
+    delegate_to: localhost
+    become: no
+    block:
+          - name: Create kickstartHostConfigs Dir
+            file: path=../{{Kickstart.path}} state=directory
+          - name: Create Kickstart Files
+            template:
+              src: kickstart.cfg.j2
+              dest: "../kickstartHostConfigs/{{inventory_hostname }}.cfg"
+
+          - name: Create kickstartIsos Dir
+            file: path=../{{ISO.path}} state=directory
+
+          - name: Build Kickstart Loaded ISO
+            delegate_to: localhost
+            become: no
+            connection: local
+            command: chdir=../ ./build-configuration-iso.sh {{Kickstart.path}}/{{inventory_hostname}}.cfg {{ISO.path}}/local1.iso
+
+          - meta: end_play
+
+  - name: upload ISO
+    vsphere_copy:
+      hostname: "{{ vsphere_hostname }}"
+      username: "{{ vsphere_username }}"
+      password: "{{ vsphere_password }}"
+      datacenter: "{{ vsphere_datacenter }}"
+      datastore: "{{ vsphere_datastore }}"
+      src: build/{{ inventory_hostname }}.iso
+      path: ISOs/{{ inventory_hostname }}.iso
+
+  - name: create vm
+    vsphere_guest:
+      vcenter_hostname: "{{ vsphere_hostname }}"
+      username: "{{ vsphere_username }}"
+      password: "{{ vsphere_password }}"
+      guest: "{{ inventory_hostname }}"
+      state: powered_on
+      vm_disk:
+        disk1:
+          size_gb: 16
+          type: thin
+          datastore: "{{ vsphere_datastore }}"
+      vm_nic:
+        nic1:
+          network: VM Network
+          type: vmxnet3
+          network_type: dvs
+      vm_hardware:
+        memory_mb: 2048
+        num_cpus: 2
+        osid: centos64Guest
+        scsi: paravirtual
+        vm_cdrom:
+          boot:
+            type: "iso"
+            iso_path: "{{ vsphere_datastore }}/boot.iso"
+          kickstart:
+            type: "iso"
+            iso_path: "{{ vsphere_datastore }}/ISOs/{{ inventory_hostname }}.iso"
