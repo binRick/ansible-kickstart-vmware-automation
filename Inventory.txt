@@ -3,7 +3,10 @@ local1 ansible_ssh_host=12.2.3.4 netmask=255.255.255.0 gateway=1.2.3.1 dns1=8.8.
 local2 ansible_ssh_host=11.2.3.4 netmask=255.255.255.252 gateway=2.2.3.1 dns1=1.8.8.8 dns2=1.2.2.1
 
 [vms:vars]
-bastionHost=bastion1
+bastionHost=localhost
+
+[hosts]
+localhost ansible_connection=local become=no
 
 [esxHosts]
 esx1 ansible_ssh_host=2.3.3.4 vcenter_username=administrator vcenter_password=123123 storageDatastore=myDatastore0 datacenter=datacenter bastionHost=bastion1 vcenter_hostname=vcenter.domain.com esxi_hostname=esx1.domain.com vcenter_datacenter=myDC vcenter_cluster=myCluster1 vcenter_datastore=myDataStore1
