@@ -1,0 +1,91 @@
+- hosts: esxHosts
+  become: no
+  connection: local
+
+  vars_files:
+   ../vars/main.yaml
+  vars:
+    localFile: /etc/passwd
+
+  tasks:
+        - name: Save the ESXi configuration locally by authenticating against the vCenter and selecting the ESXi host
+          delegate_to: '{{bastionHost}}'
+          register: esxConfig
+          vmware_cfg_backup:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            esxi_hostname: '{{ esxi_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            state: saved
+            dest: '{{localEsxConfigStorageDirectory}}'
+
+        - debug: var=esxConfig
+
+        - name: Create ESX Datastore Storage Directory
+          delegate_to: '{{bastionHost}}'
+          register: storageDir
+          vcenter_folder:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            datacenter_name: '{{datacenter}}'
+            folder_type: vm
+            folder_name: '{{storageDirectoryName}}'
+            state: present
+
+        - name: Deploy OVF 
+          delegate_to: '{{bastionHost}}'
+          register: ovf
+          vmware_deploy_ovf:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            datacenter: '{{vcenter_datacenter}}'
+            cluster: '{{vcenter_cluster}}'
+            datastore: '{{vcenter_datastore}}'
+            name: '{{OVF.name}}'
+            power_on: '{{OVF.power_on}}'
+            folder: '{{storageDirectoryName}}'
+            ovf: '{{OVF.path}}'
+            disk_provisioning: '{{disk_provisioning}}'
+            inject_ovf_env: '{{OVF.inject_ovf_env}}'
+            wait_for_ip_address: '{{OVF.wait_for_ip_address}}'
+            wait: '{{OVF.wait}}'
+        - debug: var=ovvf
+
+        - name: Export OVF
+          delegate_to: '{{bastionHost}}'
+          register: exportOvf
+          vmware_export_ovf:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            datacenter: '{{vcenter_datacenter}}'
+            name: '{{ ExportedVM.name }}'
+            export_with_images: '{{ExportedVM.export_with_images}}'
+            export_dir: '{{ExportedVM.dir}}'
+        - debug: var=exportOvf
+
+
+        - name: Change virtual machine's boot order and related parameters
+          delegate_to: '{{bastionHost}}'
+          register: manageBootOrder
+          vmware_guest_boot_manager:
+            validate_certs: '{{validateEsxCerts}}'
+            hostname: '{{ vcenter_hostname }}'
+            username: '{{ vcenter_username }}'
+            password: '{{ vcenter_password }}'
+            datacenter: '{{vcenter_datacenter}}'
+            name: '{{ BootManagedVM.name }}'
+            boot_delay: '{{ BootManagedVM.boot_delay }}'
+            enter_bios_setup: '{{ BootManagedVM.enter_bios_setup }}'
+            boot_retry_enabled: '{{ BootManagedVM.boot_retry_enabled }}'
+            boot_retry_delay: '{{ BootManagedVM.boot_retry_delay }}'
+            boot_firmware: '{{ BootManagedVM.boot_firmware }}'
+            secure_boot_enabled: '{{ BootManagedVM.secure_boot_enabled }}'
+            boot_order: '{{bootOrder}}'
+

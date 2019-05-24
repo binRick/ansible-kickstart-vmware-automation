@@ -1,5 +1,40 @@
 ---
 
+OVF:
+ name: test ovf1
+ power_on: no
+ path: /absolute/path/to/template/mytemplate.ova
+ disk_provisioning: thin
+ inject_ovf_env: no
+ wait: yes
+ wait_for_ip_address: yes
+
+ExportedVM:
+ name: cis-dev
+ export_with_images: no
+ dir: /root
+
+BootManagedVM:
+ name: cis-validation
+ boot_delay: 2000
+ enter_bios_setup: no
+ boot_retry_enabled: no
+ boot_retry_delay: 10000
+ boot_firmware: bios
+ secure_boot_enabled: no 
+ bootOrder:
+  - floppy
+  - cdrom
+  - ethernet
+  - disk
+
+localEsxConfigStorageDirectory: /tmp
+
+
+validateEsxCerts: no
+
+storageDirectoryName: automationStorage
+
 #python -c 'import crypt; print(crypt.crypt("123123"))'
 rootHash: $6$Q4xu3t5zrNywPd1q$08IETBkhH1Z8s6CJ8q8qAnIDYjni0.3bGctySM71oevylrbimLpcw4tMnSUTc40OGI3TPr9ze45ce7QNPhA4C.
 interface: ens192
