@@ -9,10 +9,12 @@ bastionHost=localhost
 localhost ansible_connection=local become=no
 
 [esxHosts]
-esx1 ansible_ssh_host=2.3.3.4 vcenter_username=administrator vcenter_password=123123 storageDatastore=myDatastore0 datacenter=datacenter bastionHost=bastion1 vcenter_hostname=vcenter.domain.com esxi_hostname=esx1.domain.com vcenter_datacenter=myDC vcenter_cluster=myCluster1 vcenter_datastore=myDataStore1
+esx01.product.healthinteractive.net ansible_ssh_host=10.186.108.151 vcenter_username=administrator vcenter_password=123123 storageDatastore=myDatastore0 datacenter=datacenter bastionHost=bastion1
+
+[esxHosts:vars]
 
 
 
 [bastionHosts]
-bastion1 ansible_ssh_host=1.2.3.4 vcenter_username=administrator vcenter_password=123123 storageDatastore=myDatastore0 datacenter=datacenter bastionHost=bastion1 vcenter_hostname=vcenter.domain.com esxi_hostname=esx1.domain.com vcenter_datacenter=myDC vcenter_cluster=myCluster1 vcenter_datastore=myDataStore1
+localhost connection=local ansible_ssh_host=127.0.0.1 vcenter_username=administrator vcenter_password=123123 storageDatastore=myDatastore0 datacenter=datacenter bastionHost=bastion1 vcenter_hostname=vcenter.domain.com esxi_hostname=esx1.domain.com vcenter_datacenter=myDC vcenter_cluster=myCluster1 vcenter_datastore=myDataStore1
 

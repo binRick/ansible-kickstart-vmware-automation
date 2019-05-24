@@ -1,26 +1,92 @@
-- hosts: esxHosts
+---
+- name: Setup Ansible Controller
+  hosts: localhost
+  gather_facts: no
   become: no
-  connection: local
-
+  vars:
+   site: product
   vars_files:
    ../vars/main.yaml
+  pre_tasks:
+    - name: Import loadJsons.yaml
+      import_tasks: ~/mes-core-infrastructure/playbooks/includes/loadJsons.yaml
+  tasks:
+    - name: Deploy Required Tools
+      become: yes
+      become_user: root
+      become_method: sudo
+      block:
+      - name: Deploy Python Packages
+        pip: 
+         name: requests
+         state: present
+         extra_args: --user
+
+
+    - name: Deploy mes-esx-config-backups Repo
+      block:
+        - name: Clone mes-esx-config-backups repo
+          git:
+            repo: git@gitlab.product.healthinteractive.net:rblundell/mes-esx-config-backups.git
+            dest: ~/mes-esx-config-backups
+            accept_hostkey: yes
+            update: yes
+            clone: yes
+        - name: Create Per Site Directories in mes-esx-config-backups repo
+          loop: [configs,facts]
+          file:
+           path: "~/mes-esx-config-backups/{{site}}/{{item}}"
+           state: directory
+        - name: Create Branch
+          shell: chdir=~/mes-esx-config-backups git checkout -b {{site}}
+
+
+- name: Setup ESX Hosts
+  hosts: esxHosts
+  gather_facts: no
+  become: no
   vars:
-    localFile: /etc/passwd
+   site: product
+  vars_files: [../vars/main.yaml]
+
+  pre_tasks:
+    - name: Import loadJsons.yaml
+      import_tasks: ~/mes-core-infrastructure/playbooks/includes/loadJsons.yaml
 
   tasks:
-        - name: Save the ESXi configuration locally by authenticating against the vCenter and selecting the ESXi host
-          delegate_to: '{{bastionHost}}'
+    - name: Setup ESX Hosts
+      delegate_to: localhost
+      block:
+        - name: Gather vmware host facts
+          register: host_facts
+          vmware_host_facts:
+            hostname: "{{siteSecrets[site].vsphereIP}}"
+            username: "{{sites[site].vsphere.username}}"
+            password: "{{siteSecrets[site].vsphereAdminPassword}}"
+            esxi_hostname: '{{ inventory_hostname }}'
+            validate_certs: False
+
+        - debug: var=host_facts
+
+        - name: Save the ESXi configuration to mes-esx-config-backups repo
           register: esxConfig
           vmware_cfg_backup:
-            validate_certs: '{{validateEsxCerts}}'
-            hostname: '{{ vcenter_hostname }}'
-            esxi_hostname: '{{ esxi_hostname }}'
-            username: '{{ vcenter_username }}'
-            password: '{{ vcenter_password }}'
+            validate_certs: False
+            hostname: "{{siteSecrets[site].vsphereIP}}"
+            username: "{{sites[site].vsphere.username}}"
+            password: "{{siteSecrets[site].vsphereAdminPassword}}"
+            esxi_hostname: '{{ inventory_hostname }}'
             state: saved
-            dest: '{{localEsxConfigStorageDirectory}}'
+            dest: "~/mes-esx-config-backups/{{site}}"
 
         - debug: var=esxConfig
+
+
+#    - name: Push to origin.
+
+#      shell: "git push origin branch"
+
+        - meta: end_play
 
         - name: Create ESX Datastore Storage Directory
           delegate_to: '{{bastionHost}}'
