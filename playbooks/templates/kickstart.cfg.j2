@@ -1,0 +1,109 @@
+###########################
+##   KICKSTART OPTIONS   ##
+###########################
+inst.cmdline # Non Interactive Mode
+inst.kexec # Fast Reboot, may cause an issue
+inst.zram=1 # Faster Install
+inst.sshd=1
+text #TUI
+install
+autostep --autoscreenshot
+cdrom
+reboot
+
+#######################
+##   LOCALIZATION    ##
+#######################
+keyboard --vckeymap=us --xlayouts='us'
+lang en_US.UTF-8
+timezone {{timezone}}
+
+##########################
+##   BOOT CONFIGURATION ##
+##########################
+bootloader --driveorder={{primaryBlockDevice}} --boot-drive={{primaryBlockDevice}} --location=mbr --append="rhgb quiet" --timeout=5  --password "{{grubPassword}}"
+
+#######################
+##   SECURITY        ##
+#######################
+firewall --enabled --service=ssh
+selinux=0
+
+#######################
+##   SERVICES        ##
+#######################
+services --disabled auditd, cups, rsyncd, smartd, bluetooth, xinetd, sendmail, lm_sensors, irda
+services --enabled sshd, auditd, nfslock, rngd, sssd
+
+#######################
+##   ROOT PASSWORD   ##
+#######################
+rootpw --iscrypted {{rootHash}}
+sshpw --username=root {{rootHash}} --iscrypted
+
+########################
+##   ACTIVE DIRECTORY ##
+########################
+auth --enableshadow --passalgo=sha512 
+{% if ldap is defined and 'server' in ldap.keys() and 'basedn' in ldap.keys()%}
+realm join --client-software=sssd --server-software=active-directory #TODO: add more realm options
+#### --enableldap --enableldapauth --ldapserver={{ldap.server}} --ldapbasedn={{ldap.basedn}} --enableldaptls 
+{%else%}#ldap object required for AD
+{%endif%}
+
+
+
+####################
+##   NETWORKING   ##
+####################
+network --hostname={{inventory_hostname}} --bootproto=static --ip={{ansible_ssh_host}} --netmask={{netmask}} --gateway={{gateway}} --nameserver={{dns1}} --nameserver={{dns2}} --onboot --noipv6  --activate
+
+
+####################
+##   LOGGING      ##
+####################
+{% if syslog is defined and 'host' in syslog.keys() and 'port' in syslog.keys() %}
+logging --host={{syslog.host|ipv4}}  --port={{syslog.port|int}}
+{%else%}#syslog server required for Logging
+{%endif%}
+
+####################
+##   DISK         ##
+####################
+ignoredisk --only-use={{primaryBlockDevice}}
+zerombr
+clearpart --all --initlabel --drives={{primaryBlockDevice}}
+partition /boot --fstype xfs --size=128 --ondisk={{primaryBlockDevice}}
+partition pv.2 --size=0 --grow --ondisk={{primaryBlockDevice}}
+volgroup rhel pv.2
+logvol swap --fstype swap --name=lvSwap --vgname=rhel --size=2048
+logvol /var --fstype xfs --name=lvvar --vgname=rhel --size=10240
+logvol /var/log --fstype xfs --name=lvvar_log --vgname=rhel --size=10240
+logvol /var/log/audit --fstype xfs --name=lvvarLog_audit --vgname=rhel --size=10240
+logvol /home --fstype xfs --name=lvhome --vgname=rhel --size=10240
+logvol /tmp --fstype xfs --name=lvtmp --vgname=rhel --size=4096
+logvol / --fstype xfs --name=lvRoot --vgname=rhel --grow --maxsize=512000
+
+snapshots rhel/lvRoot --name=initialState --when=post-install
+
+####################
+##   PACKAGES     ##
+####################
+%packages --excludedocs 
+{% for package in basePackages %}
+{{package}}
+{%endfor%}
+
+####################
+##   POST INSTALL ##
+####################
+%post --log=/root/ks-post.log
+echo
+echo "################################"
+echo "# Running Post Configuration   #"
+echo "################################"
+echo "################################"
+echo "# Invoking subscription-manager#"
+echo "################################"
+/usr/sbin/subscription-manager register --username=admin@example.com --password=secret --serverurl=sam-server.example.com --org="Admin Group" --environment="Dev" --servicelevel=standard --release="7.0"
+%end

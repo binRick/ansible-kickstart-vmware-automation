@@ -1,0 +1,58 @@
+---
+
+#python -c 'import crypt; print(crypt.crypt("123123"))'
+rootHash: $6$Q4xu3t5zrNywPd1q$08IETBkhH1Z8s6CJ8q8qAnIDYjni0.3bGctySM71oevylrbimLpcw4tMnSUTc40OGI3TPr9ze45ce7QNPhA4C.
+interface: ens192
+
+primaryBlockDevice: sda
+
+ldap:
+ domain: mt.domain
+ server: 5.5.5.5
+ basedn: dot.domain
+
+syslog:
+ host: 1.2.3.4
+ port: 1234
+
+timezone: America/New_York
+basePackages:
+ - "@Base"
+ - "@Core"
+ - "@system-tools"
+ - "@editors"
+ - "@admin-tools"
+ - "@development-tools"
+ - python
+ - sssd
+ - curl
+ - gcc
+ - rng-tools
+ - python-dnf
+ - libselinux-python
+ - libsemanage-python
+ - yum
+ - wget
+ - openssh-server
+ - yum-downloadonly
+ - sysstat
+ - lsscsi
+ - vim-enhanced
+ - chrony
+ - gcc
+ - rsync
+ - aide
+ - audit
+ - vlock
+ - tcpdump
+ - zsh
+ - nmap
+ - "-compiz"
+ - "-emacs-leim"
+ - "-emacspeak"
+ - "-selinux-policy"
+ - "-selinux-policy-targeted"
+
+
+grubPassword: 123123
+

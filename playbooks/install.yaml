@@ -1,0 +1,15 @@
+- hosts: vms
+  become: no
+  connection: local
+
+  vars_files:
+   ../vars/main.yaml
+
+  tasks:
+  - name: create kickstartHostConfigs dir
+    file: path=../kickstartHostConfigs state=directory
+  - name: create kickstart file
+    template:
+      src: kickstart.cfg.j2
+      dest: "../kickstartHostConfigs/{{inventory_hostname }}.cfg"
+
